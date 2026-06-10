@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import axios from "axios";
+import { fetchProductById, fetchProducts } from "../api/productsApi.js";
 import { useCart } from "../context/CartContext.jsx";
 import { useFavourites } from "../context/FavouritesContext.jsx";
+import { backendUrl, resolveBackendUrl } from "../services/appConfig.js";
 import { toast } from "react-toastify";
 import { formatEur } from "../utils/price.js";
 import { getPromotion } from "../utils/promotions.js";
@@ -10,7 +11,6 @@ import { getProductLongDescription } from "../utils/productCopy.js";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
-  const backendUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/$/, "");
   const { addToCart, cart, increaseQuantity, decreaseQuantity, removeFromCart } = useCart();
   const { isFavourite, toggleFavourite } = useFavourites();
   const location = useLocation();
@@ -46,13 +46,9 @@ export default function ProductDetailPage() {
     setLoading(true);
     setError("");
 
-    const base = backendUrl || "";
-
-    axios
-      .get(`${base}/api/products/${id}`)
-      .then((res) => {
+    fetchProductById({ backendUrl, id })
+      .then((payload) => {
         if (!active) return;
-        const payload = res.data?.prodotto || res.data;
         setProduct(payload);
       })
       .catch((err) => {
@@ -68,20 +64,9 @@ export default function ProductDetailPage() {
   }, [backendUrl, id]);
 
   useEffect(() => {
-    const base = backendUrl || "";
-
-    axios
-      .get(`${base}/api/products`, { params: { page: 1, limit: 200 } })
-      .then((res) => {
-        const payload = res.data || {};
-        const list = Array.isArray(payload?.prodotti)
-          ? payload.prodotti
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : Array.isArray(payload)
-              ? payload
-              : [];
-        setAllProducts(list);
+    fetchProducts({ backendUrl, page: 1, limit: 200 })
+      .then(({ items }) => {
+        setAllProducts(items);
       })
       .catch(() => setAllProducts([]));
   }, [backendUrl]);
@@ -114,11 +99,8 @@ export default function ProductDetailPage() {
   if (error) return <div className="alert alert-danger">{error}</div>;
   if (!product) return <div className="alert alert-warning">Prodotto non trovato.</div>;
 
-  const imgUrl = product?.percorso_immagine
-    ? `${backendUrl}${product.percorso_immagine}`
-    : null;
+  const imgUrl = product?.percorso_immagine ? resolveBackendUrl(product.percorso_immagine) : null;
   const description = getProductLongDescription(product);
-  const isCanProduct = String(product.contenitore || "").toLowerCase().includes("lattina");
   const promo = getPromotion(product);
   const savings = promo.hasDiscount ? Math.max(0, promo.originalPrice - promo.currentPrice) : 0;
 
@@ -130,7 +112,7 @@ export default function ProductDetailPage() {
 
       <div className="row g-4 align-items-start">
         <div className="col-12 col-lg-6 position-relative">
-          {isCanProduct && (
+          {promo.hasDiscount && (
             <span className="promo-corner-badge promo-corner-badge--detail">PROMO</span>
           )}
           <div className="product-image-frame product-image-frame--detail rounded-4 bg-light overflow-hidden">

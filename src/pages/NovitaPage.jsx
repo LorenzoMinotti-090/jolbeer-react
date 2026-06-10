@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import ProductCard from "../components/ProductCard.jsx";
+import { fetchProducts } from "../api/productsApi.js";
+import ProductCard from "../components/ui/ProductCard.jsx";
 import { getPromotion } from "../utils/promotions.js";
+import { backendUrl } from "../services/appConfig.js";
 
 export default function NovitaPage() {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [products, setProducts] = useState(null);
   const [error, setError] = useState("");
 
@@ -12,18 +12,9 @@ export default function NovitaPage() {
     setProducts(null);
     setError("");
 
-    axios
-      .get(`${backendUrl}/api/products`, { params: { page: 1, limit: 1000 } })
-      .then((res) => {
-        const payload = res.data || {};
-        const list = Array.isArray(payload?.prodotti)
-          ? payload.prodotti
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : Array.isArray(payload)
-              ? payload
-              : [];
-        setProducts(list);
+    fetchProducts({ backendUrl, page: 1, limit: 1000 })
+      .then(({ items }) => {
+        setProducts(items);
       })
       .catch((err) => setError(err?.message || "Errore caricamento novita"));
   }, [backendUrl]);

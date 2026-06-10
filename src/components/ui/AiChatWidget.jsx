@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { sendChatMessage } from "../../api/chatApi.js";
+import { backendUrl } from "../../services/appConfig.js";
 
 const WELCOME_MESSAGE = {
   role: "assistant",
@@ -15,7 +16,6 @@ function createMessage(role, content) {
 }
 
 export default function AiChatWidget() {
-  const backendUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/$/, "");
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,8 +47,8 @@ export default function AiChatWidget() {
     scrollToBottom();
 
     try {
-      const response = await axios.post(`${backendUrl}/api/chat`, { message });
-      const replyText = String(response?.data?.reply || "").trim();
+      const response = await sendChatMessage({ backendUrl, message });
+      const replyText = String(response?.reply || "").trim();
       const assistantMessage = createMessage(
         "assistant",
         replyText || "Non sono riuscita a generare una risposta utile."

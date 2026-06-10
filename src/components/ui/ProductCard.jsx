@@ -1,11 +1,12 @@
 import { IconEye, IconHeart, IconShoppingCartPlus } from "@tabler/icons-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useCart } from "../context/CartContext.jsx";
-import { useFavourites } from "../context/FavouritesContext.jsx";
-import { formatEur } from "../utils/price.js";
-import { getPromotion } from "../utils/promotions.js";
-import { getProductCardTeaser } from "../utils/productCopy.js";
+import { useCart } from "../../context/CartContext.jsx";
+import { useFavourites } from "../../context/FavouritesContext.jsx";
+import { resolveBackendUrl } from "../../services/appConfig.js";
+import { formatEur } from "../../utils/price.js";
+import { getPromotion } from "../../utils/promotions.js";
+import { getProductCardTeaser } from "../../utils/productCopy.js";
 
 export default function ProductCard({ product, variant = "grid", description }) {
   const navigate = useNavigate();
@@ -16,9 +17,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
   const favouriteActive = isFavourite(product.id);
 
   const imgUrl = product?.immagine_url
-    || (product?.percorso_immagine
-      ? `${import.meta.env.VITE_BACKEND_URL}${product.percorso_immagine}`
-      : null);
+    || (product?.percorso_immagine ? resolveBackendUrl(product.percorso_immagine) : null);
 
   const styleLabel = product.stile || product.categoria || "Selezione";
   const formatLabel = product.contenitore && product.formato_cl
@@ -26,7 +25,6 @@ export default function ProductCard({ product, variant = "grid", description }) 
     : product.formato || "Formato variabile";
   const abvLabel = product.grado_alcolico ? `${product.grado_alcolico}% ABV` : "ABV n/d";
   const typeLabel = product.e_bundle ? "Box" : "Birra";
-  const isCanProduct = String(product.contenitore || "").toLowerCase().includes("lattina");
   const promo = getPromotion(product);
   const savings = promo.hasDiscount ? Math.max(0, promo.originalPrice - promo.currentPrice) : 0;
 
@@ -103,7 +101,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
         onClick={handleCardClick}
         onKeyDown={handleCardKeyDown}
       >
-        {isCanProduct && (
+        {promo.hasDiscount && (
           <span className="promo-corner-badge" data-no-card-nav="true">PROMO</span>
         )}
         <div className="card-body list-card">
@@ -178,7 +176,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
     >
-      {isCanProduct && (
+      {promo.hasDiscount && (
         <span className="promo-corner-badge" data-no-card-nav="true">PROMO</span>
       )}
       <div className="position-absolute top-0 end-0 m-2 d-flex align-items-center gap-2" data-no-card-nav="true">

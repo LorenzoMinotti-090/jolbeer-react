@@ -1,11 +1,11 @@
 import { IconHeart, IconSearch, IconShoppingCart } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { useCart } from "../context/CartContext.jsx";
-import { useFavourites } from "../context/FavouritesContext.jsx";
-import FreeShippingBar, { FREE_SHIPPING_THRESHOLD } from "../components/FreeShippingBar.jsx";
-import AiChatWidget from "../components/AiChatWidget.jsx";
-import logoImage from "../assets/image/logo-jolbeer.png";
+import { useCart } from "../../context/CartContext.jsx";
+import { useFavourites } from "../../context/FavouritesContext.jsx";
+import FreeShippingBar, { FREE_SHIPPING_THRESHOLD } from "../ui/FreeShippingBar.jsx";
+import AiChatWidget from "../ui/AiChatWidget.jsx";
+import logoImage from "../../assets/image/logo-jolbeer.png";
 
 const currencyFormatter = new Intl.NumberFormat("it-IT", {
   style: "currency",

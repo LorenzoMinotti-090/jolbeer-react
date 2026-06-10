@@ -1,29 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
-import { formatEur } from "../utils/price.js";
-import { getProductShortDescription } from "../utils/productCopy.js";
+import { fetchProducts } from "../../api/productsApi.js";
+import { backendUrl, resolveBackendUrl } from "../../services/appConfig.js";
+import { formatEur } from "../../utils/price.js";
+import { getProductShortDescription } from "../../utils/productCopy.js";
 
 const FALLBACK_IMAGE = "/fallback-product.jpg";
 
 export default function BeerCarousel() {
   const [index, setIndex] = useState(0);
   const [products, setProducts] = useState([]);
-  const backendUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/$/, "");
 
   useEffect(() => {
-    axios
-      .get(`${backendUrl}/api/products`, { params: { page: 1, limit: 200 } })
-      .then((res) => {
-        const payload = res.data || {};
-        const list = Array.isArray(payload?.prodotti)
-          ? payload.prodotti
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : Array.isArray(payload)
-              ? payload
-              : [];
-        setProducts(list);
+    fetchProducts({ backendUrl, page: 1, limit: 200 })
+      .then(({ items }) => {
+        setProducts(items);
       })
       .catch(() => {
         setProducts([]);
@@ -42,7 +33,7 @@ export default function BeerCarousel() {
 
     return list.slice(0, 12).map((p) => ({
       ...p,
-      imageUrl: p.percorso_immagine ? `${backendUrl}${p.percorso_immagine}` : FALLBACK_IMAGE,
+      imageUrl: p.percorso_immagine ? resolveBackendUrl(p.percorso_immagine) : FALLBACK_IMAGE,
     }));
   }, [products, backendUrl]);
 

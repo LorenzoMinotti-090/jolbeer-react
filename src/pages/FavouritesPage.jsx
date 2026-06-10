@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import ProductCard from "../components/ProductCard.jsx";
+import ProductCard from "../components/ui/ProductCard.jsx";
 import { useFavourites } from "../context/FavouritesContext.jsx";
 
 export default function FavouritesPage() {

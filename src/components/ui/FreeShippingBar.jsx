@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useCart } from "../context/CartContext.jsx";
-import { formatEur } from "../utils/price.js";
+import { useCart } from "../../context/CartContext.jsx";
+import { formatEur } from "../../utils/price.js";
 
 export const FREE_SHIPPING_THRESHOLD = 50;
 export const SHIPPING_COST = 6.9;

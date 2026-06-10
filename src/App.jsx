@@ -8,7 +8,7 @@ import CheckoutPage from "./pages/CheckoutPage.jsx";
 import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 import ProductDetailPage from "./pages/ProductDetailPage.jsx";
 import FavouritesPage from "./pages/FavouritesPage.jsx";
-import MainLayout from "./layout/MainLayout.jsx";
+import MainLayout from "./components/layout/MainLayout.jsx";
 import "./App.css";
 
 

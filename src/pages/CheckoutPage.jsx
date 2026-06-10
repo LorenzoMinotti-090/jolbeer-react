@@ -1,9 +1,10 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { createOrder } from "../api/ordersApi.js";
 import { useCart } from "../context/CartContext.jsx";
-import FreeShippingBanner from "../components/FreeShippingBanner.jsx";
-import { FREE_GIFT_LABEL } from "../components/FreeShippingBar.jsx";
+import FreeShippingBanner from "../components/ui/FreeShippingBanner.jsx";
+import { FREE_GIFT_LABEL } from "../components/ui/FreeShippingBar.jsx";
+import { backendUrl } from "../services/appConfig.js";
 import { formatEur } from "../utils/price.js";
 
 
@@ -11,7 +12,6 @@ const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_COST = 6.9;
 
 export default function CheckoutPage() {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
   const { cart, totalPrice, clearCart } = useCart();
 
@@ -56,9 +56,9 @@ export default function CheckoutPage() {
 
     try {
       setLoading(true);
-      const res = await axios.post(`${backendUrl}/api/orders`, payload);
+      const res = await createOrder({ backendUrl, payload });
       clearCart();
-      navigate(`/ordine/${res.data.ordine_id}`);
+      navigate(`/ordine/${res.ordine_id}`);
     } catch (err) {
       setError(err?.response?.data?.error || err.message || "Errore");
     } finally {

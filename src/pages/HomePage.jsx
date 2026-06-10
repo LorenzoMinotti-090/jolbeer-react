@@ -1,15 +1,15 @@
 import { IconPackage, IconShieldCheck, IconTruckDelivery } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import ProductCard from "../components/ProductCard.jsx";
-import BeerCarousel from "../components/BeerCarousel.jsx";
+import { fetchProducts } from "../api/productsApi.js";
+import ProductCard from "../components/ui/ProductCard.jsx";
+import BeerCarousel from "../components/ui/BeerCarousel.jsx";
 import heroVideo from "../assets/video/hero-beer.mov";
+import { backendUrl } from "../services/appConfig.js";
 
 const FALLBACK_IMAGE = "/fallback-product.jpg";
 
 export default function HomePage() {
-  const backendUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/$/, "");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -19,19 +19,10 @@ export default function HomePage() {
     setLoading(true);
     setError("");
 
-    axios
-      .get(`${backendUrl}/api/products`, { params: { page: 1, limit: 200 } })
-      .then((res) => {
+    fetchProducts({ backendUrl, page: 1, limit: 200 })
+      .then(({ items }) => {
         if (!active) return;
-        const payload = res.data || {};
-        const list = Array.isArray(payload?.prodotti)
-          ? payload.prodotti
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : Array.isArray(payload)
-              ? payload
-              : [];
-        setProducts(list);
+        setProducts(items);
       })
       .catch((err) => {
         if (active) setError(err?.message || "Errore nel caricamento dei prodotti");

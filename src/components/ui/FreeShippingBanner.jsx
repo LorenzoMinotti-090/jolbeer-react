@@ -1,4 +1,4 @@
-import { formatEur } from "../utils/price.js";
+import { formatEur } from "../../utils/price.js";
 import { FREE_GIFT_LABEL } from "./FreeShippingBar.jsx";
 
 export default function FreeShippingBanner({ subtotal, threshold = 50, shippingCost = 6.9 }) {

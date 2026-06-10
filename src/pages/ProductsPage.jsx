@@ -1,8 +1,9 @@
 import { IconAdjustments } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import { useSearchParams } from "react-router-dom";
-import ProductCard from "../components/ProductCard.jsx";
+import { fetchProducts } from "../api/productsApi.js";
+import ProductCard from "../components/ui/ProductCard.jsx";
+import { backendUrl } from "../services/appConfig.js";
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 
@@ -30,7 +31,6 @@ const CATEGORY_OPTIONS = [
 ];
 
 export default function ProductsPage() {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState(null);
   const [error, setError] = useState("");
@@ -47,18 +47,9 @@ export default function ProductsPage() {
     setError("");
     setProducts(null);
 
-    axios
-      .get(`${backendUrl}/api/products`, { params: { page: 1, limit: 1000 } })
-      .then((res) => {
-        const payload = res.data || {};
-        const list = Array.isArray(payload?.prodotti)
-          ? payload.prodotti
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : Array.isArray(payload)
-              ? payload
-              : [];
-        setProducts({ prodotti: list, totale: payload?.totale || list.length });
+    fetchProducts({ backendUrl, page: 1, limit: 1000 })
+      .then(({ items, total }) => {
+        setProducts({ prodotti: items, totale: total });
       })
       .catch((err) => setError(err?.message || "Errore"));
   }, [backendUrl]);

@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
-import FreeShippingBanner from "../components/FreeShippingBanner.jsx";
-import { FREE_GIFT_LABEL, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "../components/FreeShippingBar.jsx";
+import FreeShippingBanner from "../components/ui/FreeShippingBanner.jsx";
+import { FREE_GIFT_LABEL, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "../components/ui/FreeShippingBar.jsx";
+import { resolveBackendUrl } from "../services/appConfig.js";
 import { formatEur } from "../utils/price.js";
 
 
 const FALLBACK_THUMB =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><rect width='100%' height='100%' fill='%23f1f3f5'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999999' font-family='Arial, sans-serif' font-size='12'>No image</text></svg>";
-const backendBaseUrl = import.meta.env.VITE_BACKEND_URL;
 
 export default function CartPage() {
   const {
@@ -49,7 +49,7 @@ export default function CartPage() {
   const resolveImageSrc = (item) => {
     const path = item?.image || item?.percorso_immagine || item?.percorsoImmagine;
     if (!path) return FALLBACK_THUMB;
-    return /^https?:\/\//i.test(path) ? path : `${backendBaseUrl}${path}`;
+    return resolveBackendUrl(path) || FALLBACK_THUMB;
   };
 
   if (!cart.length) return <h3>Il carrello è vuoto.</h3>;

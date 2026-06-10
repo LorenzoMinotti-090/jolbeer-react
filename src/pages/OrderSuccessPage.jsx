@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useParams, Link } from "react-router-dom";
+import { fetchOrderById } from "../api/ordersApi.js";
+import { backendUrl } from "../services/appConfig.js";
 import { formatEur } from "../utils/price.js";
 
 export default function OrderSuccessPage() {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const { id } = useParams();
 
   const [data, setData] = useState(null);
@@ -17,8 +17,8 @@ export default function OrderSuccessPage() {
     async function load() {
       try {
         setLoading(true);
-        const res = await axios.get(`${backendUrl}/api/orders/${id}`);
-        if (active) setData(res.data);
+        const payload = await fetchOrderById({ backendUrl, id });
+        if (active) setData(payload);
       } catch (err) {
         if (active) setError(err?.response?.data?.error || err.message || "Errore");
       } finally {
