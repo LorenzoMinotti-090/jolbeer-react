@@ -6,6 +6,25 @@ const CartContext = createContext();
 const STORAGE_KEY = "jolbeer_cart_v2";
 
 export function CartProvider({ children }) {
+  function getStoredProductShape(product, promo) {
+    return {
+      id: product.id,
+      slug: product.slug,
+      nome: product.nome,
+      stile: product.stile,
+      categoria: product.categoria,
+      contenitore: product.contenitore,
+      formato: product.formato,
+      formato_cl: product.formato_cl,
+      grado_alcolico: product.grado_alcolico,
+      e_bundle: product.e_bundle,
+      percorso_immagine: product.percorso_immagine,
+      immagine_url: product.immagine_url,
+      prezzo: Number(promo.currentPrice),
+      prezzo_originale: Number(promo.originalPrice),
+      discount_percent: Number(promo.discountPercent || 0),
+    };
+  }
 
   function normalizeCartItem(item) {
     const basePrice = Number(item?.prezzo_originale ?? item?.prezzo);
@@ -13,6 +32,15 @@ export function CartProvider({ children }) {
     const promo = getPromotion(productForPromo);
     return {
       ...item,
+      slug: item?.slug,
+      stile: item?.stile,
+      categoria: item?.categoria,
+      contenitore: item?.contenitore,
+      formato: item?.formato,
+      formato_cl: item?.formato_cl,
+      grado_alcolico: item?.grado_alcolico,
+      e_bundle: item?.e_bundle,
+      immagine_url: item?.immagine_url,
       prezzo: Number(promo.currentPrice),
       prezzo_originale: Number(promo.originalPrice),
       discount_percent: Number(promo.discountPercent || 0),
@@ -36,7 +64,8 @@ export function CartProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
   }, [cart]);
 
-  function addToCart(product) {
+  function addToCart(product, quantity = 1) {
+    const safeQuantity = Math.max(1, Number(quantity) || 1);
 
     const promo = getPromotion(product);
 
@@ -47,7 +76,7 @@ export function CartProvider({ children }) {
       if (exists) {
         return prev.map(p =>
           p.id === product.id
-            ? { ...p, quantity: p.quantity + 1 }
+            ? { ...p, quantity: p.quantity + safeQuantity }
             : p
         );
       }
@@ -55,13 +84,8 @@ export function CartProvider({ children }) {
       return [
         ...prev,
         {
-          id: product.id,
-          nome: product.nome,
-          prezzo: Number(promo.currentPrice),
-          prezzo_originale: Number(promo.originalPrice),
-          discount_percent: Number(promo.discountPercent || 0),
-          percorso_immagine: product.percorso_immagine,
-          quantity: 1
+          ...getStoredProductShape(product, promo),
+          quantity: safeQuantity,
         }
       ];
     });

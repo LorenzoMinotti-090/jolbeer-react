@@ -6,18 +6,17 @@ import { backendUrl } from "../services/appConfig.js";
 
 export default function NovitaPage() {
   const [products, setProducts] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setProducts(null);
-    setError("");
-
     fetchProducts({ backendUrl, page: 1, limit: 1000 })
       .then(({ items }) => {
         setProducts(items);
       })
-      .catch((err) => setError(err?.message || "Errore caricamento novita"));
-  }, [backendUrl]);
+      .catch((err) => setError(err?.message || "Errore caricamento novita"))
+      .finally(() => setLoading(false));
+  }, []);
 
   const latestNonDiscounted = useMemo(() => {
     if (!Array.isArray(products)) return [];
@@ -36,12 +35,19 @@ export default function NovitaPage() {
       .slice(0, 12);
   }, [products]);
 
-  if (error) return <div className="alert alert-danger">{error}</div>;
-  if (!products) return <div>Caricamento...</div>;
+  if (error) return <div className="section-shell alert alert-danger mb-0">{error}</div>;
+  if (loading && !products) {
+    return (
+      <div className="section-shell d-flex justify-content-center py-5">
+        <div className="spinner-border" role="status" aria-label="Caricamento novità" />
+      </div>
+    );
+  }
+  if (!products) return <div className="section-shell">Caricamento...</div>;
 
   return (
     <div className="d-flex flex-column gap-4">
-      <div className="bg-white border rounded-4 p-3 p-md-4 shadow-sm">
+      <div className="section-shell">
         <p className="text-uppercase text-muted small mb-1">Nuovi arrivi</p>
         <h1 className="mb-2">Novita JOLBEER</h1>
         <p className="mb-0 text-muted">
@@ -50,7 +56,10 @@ export default function NovitaPage() {
       </div>
 
       {latestNonDiscounted.length === 0 ? (
-        <div className="alert alert-warning">Nessuna novita disponibile al momento.</div>
+        <div className="section-shell text-center">
+          <h2 className="h4 mb-2">Nessuna novità disponibile al momento</h2>
+          <p className="mb-0">Torna presto: la sezione si aggiorna con i prodotti già presenti nelle API.</p>
+        </div>
       ) : (
         <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 g-md-4">
           {latestNonDiscounted.map((product) => (

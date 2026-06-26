@@ -1,6 +1,8 @@
+import { IconHeart, IconMinus, IconPlus, IconShoppingCart } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { fetchProductById, fetchProducts } from "../api/productsApi.js";
+import ProductCard from "../components/ui/ProductCard.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { useFavourites } from "../context/FavouritesContext.jsx";
 import { backendUrl, resolveBackendUrl } from "../services/appConfig.js";
@@ -10,58 +12,54 @@ import { getPromotion } from "../utils/promotions.js";
 import { getProductLongDescription } from "../utils/productCopy.js";
 
 export default function ProductDetailPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { addToCart, cart, increaseQuantity, decreaseQuantity, removeFromCart } = useCart();
   const { isFavourite, toggleFavourite } = useFavourites();
   const location = useLocation();
-  const productFromState = location.state?.product;
+  const productFromState = (() => {
+    const routeProduct = location.state?.product;
+    if (!routeProduct) return null;
+
+    return String(routeProduct.slug || routeProduct.id || "") === String(slug)
+      ? routeProduct
+      : null;
+  })();
 
   const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [errorState, setErrorState] = useState({ id: null, message: "" });
   const [allProducts, setAllProducts] = useState([]);
 
-  const getQty = (pid) => cart.find((item) => item.id === pid)?.quantity || 0;
-  const favActive = product ? isFavourite(product.id) : false;
+  const error = errorState.id === slug ? errorState.message : "";
+  const loadedProduct = String(product?.slug || product?.id || "") === String(slug) ? product : null;
+  const currentProduct = productFromState || loadedProduct;
+  const loading = !currentProduct && !error;
 
-  const handleDecrease = (pid) => {
-    const qty = getQty(pid);
-    if (qty <= 1) {
-      removeFromCart(pid);
-    } else {
-      decreaseQuantity(pid);
-    }
-  };
+  const getQty = (pid) => cart.find((item) => item.id === pid)?.quantity || 0;
+  const favActive = currentProduct ? isFavourite(currentProduct.id) : false;
 
   useEffect(() => {
+    if (productFromState) return undefined;
+
     let active = true;
-    if (productFromState) {
-      setProduct(productFromState);
-      setLoading(false);
-      return () => {
-        active = false;
-      };
-    }
 
-    setLoading(true);
-    setError("");
-
-    fetchProductById({ backendUrl, id })
+    fetchProductById({ backendUrl, id: slug })
       .then((payload) => {
         if (!active) return;
         setProduct(payload);
       })
       .catch((err) => {
-        if (active) setError(err?.response?.data?.error || err.message || "Errore");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (active) {
+          setErrorState({
+            id: slug,
+            message: err?.response?.data?.error || err.message || "Errore",
+          });
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [backendUrl, id]);
+  }, [productFromState, slug]);
 
   useEffect(() => {
     fetchProducts({ backendUrl, page: 1, limit: 200 })
@@ -69,13 +67,13 @@ export default function ProductDetailPage() {
         setAllProducts(items);
       })
       .catch(() => setAllProducts([]));
-  }, [backendUrl]);
+  }, []);
 
   const relatedProducts = useMemo(() => {
-    if (!product || !allProducts.length) return [];
-    const currentId = product.id;
-    const currentStyle = (product.stile || "").toLowerCase();
-    const currentCat = product.categoria_id;
+    if (!currentProduct || !allProducts.length) return [];
+    const currentId = currentProduct.id;
+    const currentStyle = (currentProduct.stile || "").toLowerCase();
+    const currentCat = currentProduct.categoria_id;
 
     const matches = allProducts.filter((p) => {
       if (p.id === currentId) return false;
@@ -86,7 +84,7 @@ export default function ProductDetailPage() {
 
     const fillers = allProducts.filter((p) => p.id !== currentId && !matches.includes(p));
     return [...matches, ...fillers].slice(0, 8);
-  }, [product, allProducts]);
+  }, [allProducts, currentProduct]);
 
   if (loading) {
     return (
@@ -97,15 +95,43 @@ export default function ProductDetailPage() {
   }
 
   if (error) return <div className="alert alert-danger">{error}</div>;
-  if (!product) return <div className="alert alert-warning">Prodotto non trovato.</div>;
+  if (!currentProduct) return <div className="alert alert-warning">Prodotto non trovato.</div>;
 
-  const imgUrl = product?.percorso_immagine ? resolveBackendUrl(product.percorso_immagine) : null;
-  const description = getProductLongDescription(product);
-  const promo = getPromotion(product);
+  const imgUrl = currentProduct?.percorso_immagine ? resolveBackendUrl(currentProduct.percorso_immagine) : null;
+  const description = getProductLongDescription(currentProduct);
+  const promo = getPromotion(currentProduct);
   const savings = promo.hasDiscount ? Math.max(0, promo.originalPrice - promo.currentPrice) : 0;
+  const cartQuantity = getQty(currentProduct.id);
+
+  const handleIncreaseCart = () => {
+    if (cartQuantity === 0) {
+      addToCart(currentProduct);
+      toast.success("Aggiunto al carrello");
+      return;
+    }
+
+    increaseQuantity(currentProduct.id);
+    toast.success("Quantità aumentata");
+  };
+
+  const handleDecreaseCart = () => {
+    if (cartQuantity <= 1) {
+      removeFromCart(currentProduct.id);
+      toast.success("Rimosso dal carrello");
+      return;
+    }
+
+    decreaseQuantity(currentProduct.id);
+    toast.success("Quantità ridotta");
+  };
+
+  const handleToggleFavourite = () => {
+    toggleFavourite(currentProduct);
+    toast.success(favActive ? "Rimosso dai preferiti" : "Aggiunto ai preferiti");
+  };
 
   return (
-    <div className="d-flex flex-column gap-3 gap-md-4">
+    <div className="product-detail-page d-flex flex-column gap-3 gap-md-4">
       <div>
         <Link className="text-decoration-none text-muted" to="/prodotti">← Torna ai prodotti</Link>
       </div>
@@ -118,7 +144,7 @@ export default function ProductDetailPage() {
           <div className="product-image-frame product-image-frame--detail rounded-4 bg-light overflow-hidden">
             <img
               src={imgUrl || "/fallback-product.jpg"}
-              alt={product.nome}
+              alt={currentProduct.nome}
               className="product-image"
               loading="lazy"
               onError={(e) => {
@@ -132,14 +158,14 @@ export default function ProductDetailPage() {
         <div className="col-12 col-lg-6">
           <div className="d-flex flex-column gap-3">
             <div>
-              <p className="text-uppercase text-muted small mb-1">{product.stile}</p>
-              <h1 className="mb-2">{product.nome}</h1>
+              <p className="text-uppercase text-muted small mb-1">{currentProduct.stile}</p>
+              <h1 className="mb-2">{currentProduct.nome}</h1>
               <div className="d-flex flex-wrap product-meta text-muted small">
-                <span className={`badge ${product.e_bundle ? "bg-primary" : "bg-secondary"}`}>
-                  {product.e_bundle ? "Box" : "Birra"}
+                <span className={`badge ${currentProduct.e_bundle ? "badge-brand" : "badge-soft"}`}>
+                  {currentProduct.e_bundle ? "Box" : "Birra"}
                 </span>
-                <span className="badge badge-soft">{product.contenitore} {product.formato_cl}cl</span>
-                <span className="badge badge-soft">{product.grado_alcolico}% ABV</span>
+                <span className="badge badge-soft">{currentProduct.contenitore} {currentProduct.formato_cl}cl</span>
+                <span className="badge badge-soft">{currentProduct.grado_alcolico}% ABV</span>
               </div>
             </div>
 
@@ -163,55 +189,77 @@ export default function ProductDetailPage() {
 
             <p className="text-muted mb-0">{description}</p>
 
-            <div className="card border-0 bg-light">
+            <div className="info-card border-0">
               <div className="card-body">
                 <div className="row g-2">
                   <div className="col-6 col-md-4">
                     <div className="text-muted small">Stile</div>
-                    <div className="fw-semibold">{product.stile}</div>
+                    <div className="fw-semibold">{currentProduct.stile}</div>
                   </div>
                   <div className="col-6 col-md-4">
                     <div className="text-muted small">Gradazione</div>
-                    <div className="fw-semibold">{product.grado_alcolico}%</div>
+                    <div className="fw-semibold">{currentProduct.grado_alcolico}%</div>
                   </div>
                   <div className="col-6 col-md-4">
                     <div className="text-muted small">Formato</div>
-                    <div className="fw-semibold">{product.contenitore} {product.formato_cl}cl</div>
+                    <div className="fw-semibold">{currentProduct.contenitore} {currentProduct.formato_cl}cl</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="d-grid d-sm-flex gap-2">
-              <button
-                className={`btn ${favActive ? "btn-danger" : "btn-outline-secondary"}`}
-                type="button"
-                onClick={() => toggleFavourite(product)}
-                aria-pressed={favActive}
-                aria-label={favActive ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
-                title={favActive ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
-              >
-                {favActive ? "♥" : "♡"}
-              </button>
-              {getQty(product.id) === 0 ? (
-                <button
-                  className="btn btn-dark"
-                  onClick={() => {
-                    addToCart(product);
-                    toast.success("Aggiunto al carrello");
-                  }}
-                >
-                  Aggiungi al carrello
-                </button>
-              ) : (
-                <div className="btn-group" role="group">
-                  <button className="btn btn-outline-secondary" onClick={() => handleDecrease(product.id)}>-</button>
-                  <span className="btn btn-outline-secondary disabled quantity-chip">{getQty(product.id)}</span>
-                  <button className="btn btn-dark" onClick={() => increaseQuantity(product.id)}>+</button>
+            <div className="detail-cta-card info-card p-3 p-md-4">
+              <div className="d-flex flex-column gap-3">
+                <div className="d-flex flex-column flex-sm-row gap-3 align-items-stretch align-items-sm-center">
+                  <div className="quantity-selector" role="group" aria-label="Controllo quantità prodotto nel carrello">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={handleDecreaseCart}
+                      aria-label="Togli una unità dal carrello"
+                      disabled={cartQuantity === 0}
+                    >
+                      <IconMinus size={18} />
+                    </button>
+                    <span className="quantity-selector__value" aria-live="polite">{cartQuantity}</span>
+                    <button
+                      type="button"
+                      className="btn btn-brand"
+                      onClick={handleIncreaseCart}
+                      aria-label="Aggiungi una unità al carrello"
+                    >
+                      <IconPlus size={18} />
+                    </button>
+                  </div>
                 </div>
-              )}
-              <Link className="btn btn-outline-secondary" to="/carrello">Vai al carrello</Link>
+
+                <div className="d-grid d-sm-flex gap-2">
+                  <button
+                    className={`btn ${favActive ? "btn-danger" : "btn-outline-secondary"} d-inline-flex align-items-center justify-content-center gap-2`}
+                    type="button"
+                    onClick={handleToggleFavourite}
+                    aria-pressed={favActive}
+                    aria-label={favActive ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                    title={favActive ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                  >
+                    <IconHeart size={20} />
+                    <span>Preferiti</span>
+                  </button>
+                  <Link className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2" to="/carrello">
+                    <IconShoppingCart size={20} />
+                    <span>Carrello</span>
+                  </Link>
+                </div>
+              </div>
             </div>
+
+            <section className="info-card p-4">
+              <div className="section-header mb-0">
+                <span className="section-kicker">Descrizione completa</span>
+                <h2 className="h4 mb-1">Profilo prodotto</h2>
+                <p className="mb-0">{currentProduct.descrizione || description}</p>
+              </div>
+            </section>
           </div>
         </div>
       </div>
@@ -223,37 +271,11 @@ export default function ProductDetailPage() {
             <Link className="text-decoration-none" to="/prodotti">Vedi tutti</Link>
           </div>
           <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-            {relatedProducts.map((item) => {
-              const relImg = item?.percorso_immagine
-                ? `${backendUrl}${item.percorso_immagine}`
-                : "/fallback-product.jpg";
-              return (
-                <div className="col" key={item.id || item.nome}>
-                  <div className="card h-100 product-card">
-                    <div className="product-image-frame product-image-frame--grid bg-light rounded-top">
-                      <img
-                        src={relImg}
-                        alt={item.nome}
-                        className="product-image"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = "/fallback-product.jpg";
-                        }}
-                      />
-                    </div>
-                    <div className="card-body d-flex flex-column gap-2">
-                      <p className="text-uppercase text-muted small mb-1">{item.stile || item.categoria}</p>
-                      <h6 className="mb-1" title={item.nome}>{item.nome}</h6>
-                      <div className="fw-semibold">{formatEur(item.prezzo)}</div>
-                      <Link className="btn btn-outline-secondary btn-sm mt-auto" to={`/prodotti/${item.id}`} state={{ product: item }}>
-                        Vai al prodotto
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {relatedProducts.map((item) => (
+              <div className="col" key={item.id || item.nome}>
+                <ProductCard product={item} />
+              </div>
+            ))}
           </div>
         </section>
       )}

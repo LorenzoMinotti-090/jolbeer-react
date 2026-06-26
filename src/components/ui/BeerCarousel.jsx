@@ -19,7 +19,7 @@ export default function BeerCarousel() {
       .catch(() => {
         setProducts([]);
       });
-  }, [backendUrl]);
+  }, []);
 
   const slides = useMemo(() => {
     const list = [...products]
@@ -35,7 +35,7 @@ export default function BeerCarousel() {
       ...p,
       imageUrl: p.percorso_immagine ? resolveBackendUrl(p.percorso_immagine) : FALLBACK_IMAGE,
     }));
-  }, [products, backendUrl]);
+  }, [products]);
 
   useEffect(() => {
     if (!slides.length) return undefined;
@@ -61,7 +61,7 @@ export default function BeerCarousel() {
         {current && (
           <Link
             className="beer-carousel__image-frame"
-            to={`/prodotti/${current.id}`}
+            to={`/prodotti/${current.slug || current.id}`}
             state={{ product: current }}
           >
             <img
@@ -86,7 +86,7 @@ export default function BeerCarousel() {
           <div className="beer-carousel__actions">
             <Link
               className="btn btn-sm btn-outline-brand"
-              to={`/prodotti/${current?.id}`}
+              to={`/prodotti/${current?.slug || current?.id}`}
               state={{ product: current }}
             >
               Vedi prodotto

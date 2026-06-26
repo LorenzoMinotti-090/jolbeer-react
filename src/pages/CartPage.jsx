@@ -28,13 +28,42 @@ export default function CartPage() {
   const [showFreeShippingToast, setShowFreeShippingToast] = useState(false);
   const wasAboveThresholdRef = useRef(isFreeShipping);
 
-  useEffect(() => {
-    const isAbove = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const syncFreeShippingState = (nextCart) => {
+    const nextSubtotal = nextCart.reduce((sum, item) => sum + Number(item.prezzo || 0) * Number(item.quantity || 0), 0);
+    const isAbove = nextSubtotal >= FREE_SHIPPING_THRESHOLD;
+
     if (isAbove && !wasAboveThresholdRef.current) {
       setShowFreeShippingToast(true);
     }
+
     wasAboveThresholdRef.current = isAbove;
-  }, [subtotal]);
+  };
+
+  const handleIncreaseQuantity = (id) => {
+    const nextCart = cart.map((item) => (item.id === id ? { ...item, quantity: item.quantity + 1 } : item));
+    syncFreeShippingState(nextCart);
+    increaseQuantity(id);
+  };
+
+  const handleDecreaseQuantity = (id) => {
+    const nextCart = cart
+      .map((item) => (item.id === id ? { ...item, quantity: Math.max(1, item.quantity - 1) } : item))
+      .filter((item) => item.quantity > 0);
+
+    syncFreeShippingState(nextCart);
+    decreaseQuantity(id);
+  };
+
+  const handleRemoveFromCart = (id) => {
+    const nextCart = cart.filter((item) => item.id !== id);
+    syncFreeShippingState(nextCart);
+    removeFromCart(id);
+  };
+
+  const handleClearCart = () => {
+    syncFreeShippingState([]);
+    clearCart();
+  };
 
   useEffect(() => {
     if (!showFreeShippingToast) return;
@@ -52,7 +81,16 @@ export default function CartPage() {
     return resolveBackendUrl(path) || FALLBACK_THUMB;
   };
 
-  if (!cart.length) return <h3>Il carrello è vuoto.</h3>;
+  if (!cart.length) {
+    return (
+      <div className="cart-empty section-shell text-center d-flex flex-column gap-3 align-items-center">
+        <span className="section-kicker">Carrello</span>
+        <h1 className="mb-0">Il carrello è vuoto</h1>
+        <p className="mb-0">Aggiungi birre singole o box degustazione per iniziare il tuo ordine.</p>
+        <Link className="btn btn-brand btn-lg" to="/prodotti">Torna ai prodotti</Link>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -78,13 +116,25 @@ export default function CartPage() {
 
       <div className="row gy-3">
         <div className="col-12 col-lg-8">
-          <h1 className="mb-3">Carrello</h1>
+          <div className="section-shell mb-3">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+              <div>
+                <span className="section-kicker">Carrello</span>
+                <h1 className="mb-1">Rivedi il tuo ordine</h1>
+                <p className="mb-0">Quantità, prezzi e spedizione restano sempre leggibili mentre aggiorni il carrello.</p>
+              </div>
+              <div className="d-flex gap-2 flex-wrap">
+                <Link className="btn btn-outline-secondary" to="/prodotti">Continua gli acquisti</Link>
+                <button className="btn btn-outline-danger" onClick={handleClearCart}>Svuota carrello</button>
+              </div>
+            </div>
+          </div>
 
           {cart.map((item) => (
-            <div key={item.id} className="card p-3 mb-3">
+            <div key={item.id} className="card p-3 mb-3 cart-line-card">
               <div className="cart-item-grid">
                 <div className="cart-thumb">
-                    <Link to={`/prodotti/${item.id}`} state={{ product: item }} className="d-inline-block">
+                    <Link to={`/prodotti/${item.slug || item.id}`} state={{ product: item }} className="d-inline-block">
                       <img
                         src={resolveImageSrc(item)}
                         alt={item.name || item.nome}
@@ -100,36 +150,45 @@ export default function CartPage() {
 
                 <div className="cart-info">
                   <div className="d-flex justify-content-between align-items-start gap-2">
-                    <h5 className="mb-1">
+                    <h5 className="mb-1 cart-product-title">
                       <Link
-                        to={`/prodotti/${item.id}`}
+                        to={`/prodotti/${item.slug || item.id}`}
                         state={{ product: item }}
-                        className="text-decoration-none text-dark"
+                        className="cart-product-link text-decoration-none"
                       >
                         {item.name || item.nome}
                       </Link>
                     </h5>
                     <div className="text-muted small d-none d-md-inline">{formatEur(item.prezzo)}</div>
                   </div>
+                  <div className="cart-product-meta d-flex flex-wrap gap-2 small mb-1">
+                    {item.stile && <span className="badge cart-info-badge">{item.stile}</span>}
+                    {(item.contenitore || item.formato) && (
+                      <span className="badge cart-info-badge">
+                        {item.contenitore || item.formato} {item.formato_cl ? `${item.formato_cl}cl` : ""}
+                      </span>
+                    )}
+                    {item.grado_alcolico && <span className="badge cart-info-badge">{item.grado_alcolico}% ABV</span>}
+                  </div>
                   {item.discount_percent > 0 && (
-                    <div className="small text-muted d-flex align-items-center gap-2 flex-wrap">
+                    <div className="small cart-product-pricing d-flex align-items-center gap-2 flex-wrap">
                       <span className="price-old">{formatEur(item.prezzo_originale)}</span>
                       <span className="fw-semibold">{formatEur(item.prezzo)}</span>
                       <span className="fw-semibold">-{item.discount_percent}%</span>
                     </div>
                   )}
-                  <div className="text-muted small">
+                  <div className="cart-row-total small">
                     Totale riga: <span className="fw-semibold text-dark">{formatEur(item.prezzo * item.quantity)}</span>
                   </div>
                 </div>
 
                 <div className="cart-meta">
                   <div className="cart-qty d-flex align-items-center gap-2">
-                    <button className="btn btn-outline-dark btn-sm" onClick={() => decreaseQuantity(item.id)}>
+                    <button className="btn btn-outline-dark btn-sm" onClick={() => handleDecreaseQuantity(item.id)} aria-label="Riduci quantità">
                       -
                     </button>
                     <span className="fw-bold">{item.quantity}</span>
-                    <button className="btn btn-outline-dark btn-sm" onClick={() => increaseQuantity(item.id)}>
+                    <button className="btn btn-outline-dark btn-sm" onClick={() => handleIncreaseQuantity(item.id)} aria-label="Aumenta quantità">
                       +
                     </button>
                   </div>
@@ -140,7 +199,7 @@ export default function CartPage() {
                   </div>
 
                   <div className="cart-actions d-flex justify-content-end">
-                    <button className="btn btn-danger btn-sm" onClick={() => removeFromCart(item.id)}>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleRemoveFromCart(item.id)}>
                       Rimuovi
                     </button>
                   </div>
@@ -151,7 +210,7 @@ export default function CartPage() {
         </div>
 
         <div className="col-12 col-lg-4">
-          <div className="card p-3 sticky-lg-top" style={{ top: "6.5rem" }}>
+          <div className="card p-3 sticky-lg-top cart-summary-card" style={{ top: "6.5rem" }}>
             <FreeShippingBanner
               key={isFreeShipping ? "free" : "paid"}
               subtotal={roundedSubtotal}
@@ -178,12 +237,10 @@ export default function CartPage() {
               <span className="price price--total text-dark">{formatEur(grandTotal)}</span>
             </div>
             <div className="d-grid gap-2">
-              <Link className="btn btn-dark" to="/checkout">
+              <Link className="btn btn-brand" to="/checkout">
                 Vai al checkout
               </Link>
-              <button className="btn btn-outline-danger" onClick={clearCart}>
-                Svuota carrello
-              </button>
+              <Link className="btn btn-outline-secondary" to="/prodotti">Aggiungi altri prodotti</Link>
             </div>
           </div>
         </div>

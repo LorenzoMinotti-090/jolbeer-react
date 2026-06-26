@@ -7,17 +7,25 @@ import BeerCarousel from "../components/ui/BeerCarousel.jsx";
 import heroVideo from "../assets/video/hero-beer.mov";
 import { backendUrl } from "../services/appConfig.js";
 
-const FALLBACK_IMAGE = "/fallback-product.jpg";
+function getStableRank(product) {
+  const seed = `${product?.id || ""}:${product?.nome || ""}`;
+  let hash = 0;
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) % 2147483647;
+  }
+
+  return hash;
+}
 
 export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const boxHref = "/prodotti?q=box%20degustazione";
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError("");
 
     fetchProducts({ backendUrl, page: 1, limit: 200 })
       .then(({ items }) => {
@@ -34,7 +42,7 @@ export default function HomePage() {
     return () => {
       active = false;
     };
-  }, [backendUrl]);
+  }, []);
 
   const newestProducts = useMemo(() => {
     if (!products.length) return [];
@@ -75,13 +83,42 @@ export default function HomePage() {
 
   const bestsellerProducts = useMemo(() => {
     if (!products.length) return [];
-    const copy = [...products];
-    for (let i = copy.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy.slice(0, 8);
+
+    return [...products]
+      .sort((a, b) => getStableRank(a) - getStableRank(b))
+      .slice(0, 8);
   }, [products]);
+
+  const highlightStats = useMemo(() => {
+    const totalStyles = new Set(
+      products
+        .map((product) => (product.stile || product.categoria || "").trim())
+        .filter(Boolean)
+    ).size;
+
+    return [
+      { value: products.length || 0, label: "etichette online" },
+      { value: boxProducts.length || 0, label: "box degustazione" },
+      { value: totalStyles || 0, label: "stili selezionati" },
+    ];
+  }, [boxProducts.length, products]);
+
+  const shopBenefits = useMemo(() => {
+    return [
+      {
+        title: "Catalogo leggibile",
+        copy: "Schede essenziali con stile, formato, ABV e promozioni sempre chiare.",
+      },
+      {
+        title: "Selezioni degustazione",
+        copy: "Box e percorsi di assaggio costruiti con i prodotti già presenti in catalogo.",
+      },
+      {
+        title: "Spedizione controllata",
+        copy: "Sopra 50 euro la spedizione è gratuita e il riepilogo resta sempre trasparente.",
+      },
+    ];
+  }, []);
 
   return (
     <div className="home-page d-flex flex-column gap-5">
@@ -90,14 +127,14 @@ export default function HomePage() {
           <div className="row align-items-center g-4 g-lg-5">
             <div className="col-12 col-lg-6 order-2 order-lg-1">
               <div className="hero-spotlight h-100 d-flex flex-column gap-3 justify-content-center text-center text-lg-start">
-                <span className="badge bg-light text-dark align-self-center align-self-lg-start">Artigianale premium</span>
-                <h1 className="display-5 fw-bold mb-0">Birre curate, atmosfere da degustazione</h1>
+                <h1 className="display-5 fw-bold mb-0">Birre artigianali curate per chi vuole bere meglio</h1>
                 <p className="mb-0 lead hero-subtitle">
-                  Selezione italiana ed europea con box degustazione, stili iconici e formati speciali.
-                  Spedizione rapida e pagamenti sicuri.
+                  Una selezione essenziale di etichette, box degustazione e stili iconici con un percorso d&apos;acquisto semplice,
+                  ordinato e pensato per la degustazione.
                 </p>
                 <div className="d-flex flex-wrap justify-content-center justify-content-lg-start gap-3">
-                  <Link className="btn btn-brand btn-lg px-4 w-100 w-sm-auto" to="/prodotti">Scopri il catalogo</Link>
+                  <Link className="btn btn-brand btn-lg px-4 w-100 w-sm-auto" to="/prodotti">Scopri le birre</Link>
+                  <Link className="btn btn-outline-brand btn-lg px-4 w-100 w-sm-auto" to={boxHref}>Prova un box</Link>
                 </div>
                 <div className="trust-bar justify-content-center justify-content-lg-start">
                   {[
@@ -115,8 +152,16 @@ export default function HomePage() {
               </div>
             </div>
             <div className="col-12 col-lg-6 order-1 order-lg-2">
-              <div className="hero-media position-relative">
+              <div className="hero-media">
                 <video className="hero-video" src={heroVideo} autoPlay muted loop playsInline />
+              </div>
+              <div className="hero-overlay-card" aria-hidden="true">
+                {highlightStats.map((item) => (
+                  <div key={item.label} className="hero-overlay-stat">
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -130,6 +175,20 @@ export default function HomePage() {
             <span className="text-muted">Seleziona le tue birre preferite, il resto lo gestiamo noi.</span>
           </div>
           <Link className="btn btn-brand btn-sm" to="/prodotti">Vai ai prodotti</Link>
+        </div>
+      </section>
+
+      <section className="container">
+        <div className="row g-3 g-lg-4 home-benefits">
+          {shopBenefits.map((benefit) => (
+            <div className="col-12 col-md-4" key={benefit.title}>
+              <article className="info-card h-100 p-4">
+                <span className="section-kicker">Vantaggio</span>
+                <h2 className="h5 mb-2">{benefit.title}</h2>
+                <p className="mb-0">{benefit.copy}</p>
+              </article>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -164,6 +223,15 @@ export default function HomePage() {
           <p className="mb-0">Selezioni tematiche pronte all&apos;assaggio, perfette da condividere.</p>
         </div>
         <BeerCarousel />
+        {boxProducts.length > 0 && (
+          <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 g-md-4 mt-1">
+            {boxProducts.map((product) => (
+              <div className="col" key={product.id || product.nome}>
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
+        )}
         {!loading && boxProducts.length === 0 && (
           <div className="alert alert-secondary mt-3">Box in arrivo, torna presto per nuove selezioni.</div>
         )}
@@ -183,6 +251,39 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="container">
+        <div className="brand-story section-shell">
+          <div className="row g-4 align-items-center">
+            <div className="col-12 col-lg-7">
+              <div className="section-header mb-0">
+                <span className="section-kicker">Il brand</span>
+                <h2 className="section-title">JOLBEER seleziona il catalogo con un taglio più curatoriale che enciclopedico</h2>
+                <p className="mb-0">
+                  Meno rumore, più scelta ragionata: ogni scheda prodotto mette in evidenza ciò che serve davvero per acquistare bene,
+                  dal formato alla gradazione, fino alle promozioni e ai box degustazione.
+                </p>
+              </div>
+            </div>
+            <div className="col-12 col-lg-5">
+              <div className="brand-story__panel">
+                <div>
+                  <strong>{products.length || 0}</strong>
+                  <span>prodotti già disponibili via API</span>
+                </div>
+                <div>
+                  <strong>{newestProducts.length || 0}</strong>
+                  <span>novità in primo piano</span>
+                </div>
+                <div>
+                  <strong>{bestsellerProducts.length || 0}</strong>
+                  <span>best seller sempre accessibili</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="container pb-5">
         <div className="section-header">
           <span className="section-kicker">Più vendute</span>
@@ -198,6 +299,22 @@ export default function HomePage() {
               <ProductCard product={product} />
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="container pb-5">
+        <div className="cta-banner section-shell text-center text-lg-start">
+          <div className="row g-3 align-items-center">
+            <div className="col-12 col-lg-8">
+              <span className="section-kicker">Call to action</span>
+              <h2 className="section-title mb-2">Costruisci il tuo ordine tra birre singole e box degustazione</h2>
+              <p className="mb-0">Scopri il catalogo completo, salva i preferiti e completa l&apos;acquisto con un checkout più leggibile.</p>
+            </div>
+            <div className="col-12 col-lg-4 d-grid d-sm-flex justify-content-lg-end gap-2">
+              <Link className="btn btn-brand btn-lg" to="/prodotti">Scopri le birre</Link>
+              <Link className="btn btn-outline-brand btn-lg" to={boxHref}>Vai ai box</Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>

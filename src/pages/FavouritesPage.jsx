@@ -7,20 +7,22 @@ export default function FavouritesPage() {
 
   if (!favourites.length) {
     return (
-      <div className="bg-white border rounded-4 p-4 shadow-sm text-center d-flex flex-column gap-3 align-items-center">
-        <h1 className="mb-1">Preferiti</h1>
+      <div className="section-shell text-center d-flex flex-column gap-3 align-items-center">
+        <span className="section-kicker">Preferiti</span>
+        <h1 className="mb-1">La tua wishlist è ancora vuota</h1>
         <p className="text-muted mb-0">Non hai ancora aggiunto prodotti ai preferiti.</p>
-        <Link className="btn btn-dark" to="/prodotti">Scopri i prodotti</Link>
+        <Link className="btn btn-brand" to="/prodotti">Scopri i prodotti</Link>
       </div>
     );
   }
 
   return (
     <div className="d-flex flex-column gap-3 gap-md-4">
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div className="section-shell d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
           <p className="text-uppercase text-muted small mb-1">Wishlist</p>
           <h1 className="mb-0">I tuoi preferiti ({favourites.length})</h1>
+          <p className="mb-0 mt-2 text-muted">Salva le etichette che vuoi confrontare o acquistare più tardi.</p>
         </div>
         <div className="d-flex gap-2">
           <Link className="btn btn-outline-secondary" to="/prodotti">Torna al catalogo</Link>

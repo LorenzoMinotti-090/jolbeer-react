@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { getPromotion } from "../utils/promotions.js";
 
 const FavouritesContext = createContext();
 
@@ -19,11 +20,23 @@ export function FavouritesProvider({ children }) {
   const addFavourite = (product) => {
     setFavourites((prev) => {
       if (prev.some((item) => item.id === product.id)) return prev;
+      const promo = getPromotion(product);
       const minimal = {
         id: product.id,
+        slug: product.slug,
         nome: product.nome,
-        prezzo: Number(product.prezzo),
+        stile: product.stile,
+        categoria: product.categoria,
+        contenitore: product.contenitore,
+        formato: product.formato,
+        formato_cl: product.formato_cl,
+        grado_alcolico: product.grado_alcolico,
+        e_bundle: product.e_bundle,
+        prezzo: Number(promo.currentPrice),
+        prezzo_originale: Number(promo.originalPrice),
+        discount_percent: Number(promo.discountPercent || 0),
         percorso_immagine: product.percorso_immagine,
+        immagine_url: product.immagine_url,
       };
       return [...prev, minimal];
     });
@@ -43,20 +56,17 @@ export function FavouritesProvider({ children }) {
 
   const clearFavourites = () => setFavourites([]);
 
-  const totalFavourites = useMemo(() => favourites.length, [favourites]);
+  const totalFavourites = favourites.length;
 
-  const value = useMemo(
-    () => ({
-      favourites,
-      isFavourite,
-      toggleFavourite,
-      addFavourite,
-      removeFavourite,
-      clearFavourites,
-      totalFavourites,
-    }),
-    [favourites, totalFavourites]
-  );
+  const value = {
+    favourites,
+    isFavourite,
+    toggleFavourite,
+    addFavourite,
+    removeFavourite,
+    clearFavourites,
+    totalFavourites,
+  };
 
   return <FavouritesContext.Provider value={value}>{children}</FavouritesContext.Provider>;
 }

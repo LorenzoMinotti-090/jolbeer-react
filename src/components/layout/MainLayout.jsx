@@ -1,47 +1,28 @@
 import { IconHeart, IconSearch, IconShoppingCart } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
 import { useFavourites } from "../../context/FavouritesContext.jsx";
-import FreeShippingBar, { FREE_SHIPPING_THRESHOLD } from "../ui/FreeShippingBar.jsx";
+import FreeShippingBar from "../ui/FreeShippingBar.jsx";
 import AiChatWidget from "../ui/AiChatWidget.jsx";
 import logoImage from "../../assets/image/logo-jolbeer.png";
 
-const currencyFormatter = new Intl.NumberFormat("it-IT", {
-  style: "currency",
-  currency: "EUR"
-});
-
-function formatCurrency(value) {
-  return currencyFormatter.format(value);
-}
-
 export default function MainLayout() {
-  const { totalItems, totalPrice } = useCart();
+  const { totalItems } = useCart();
   const { totalFavourites } = useFavourites();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [navbarQuery, setNavbarQuery] = useState(() => searchParams.get("q") || "");
-
-  const subtotal = Number(totalPrice) || 0;
-  const isFreeShippingActive = subtotal >= FREE_SHIPPING_THRESHOLD;
-  const missingForFree = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-
-  useEffect(() => {
-    if (location.pathname === "/prodotti") {
-      setNavbarQuery(searchParams.get("q") || "");
-    }
-  }, [location.pathname, searchParams]);
+  const currentSearchTerm = location.pathname === "/prodotti" ? searchParams.get("q") || "" : "";
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
-    const trimmed = navbarQuery.trim();
+    const formData = new FormData(event.currentTarget);
+    const trimmed = String(formData.get("q") || "").trim();
     navigate(trimmed ? `/prodotti?q=${encodeURIComponent(trimmed)}` : "/prodotti");
   };
 
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <div className="page-shell d-flex flex-column min-vh-100">
       <nav className="navbar navbar-expand-lg navbar-light navbar-premium sticky-top">
         <div className="container">
           <NavLink className="navbar-brand" to="/">
@@ -50,14 +31,14 @@ export default function MainLayout() {
           </NavLink>
 
           <div className="d-flex align-items-center gap-2 ms-auto d-lg-none navbar-mobile-tools">
-            <form className="navbar-search-mobile" onSubmit={handleSearchSubmit} role="search">
+            <form className="navbar-search-mobile" onSubmit={handleSearchSubmit} role="search" key={`mobile:${location.pathname}:${currentSearchTerm}`}>
               <div className="input-group input-group-sm">
                 <input
+                  name="q"
                   type="search"
                   className="form-control"
                   placeholder="Cerca"
-                  value={navbarQuery}
-                  onChange={(e) => setNavbarQuery(e.target.value)}
+                  defaultValue={currentSearchTerm}
                   aria-label="Cerca"
                 />
                 <button className="btn btn-dark d-inline-flex align-items-center justify-content-center" type="submit" aria-label="Avvia ricerca">
@@ -93,14 +74,18 @@ export default function MainLayout() {
                 </NavLink>
               </div>
 
-              <form className="navbar-search ms-lg-auto w-100 order-3 order-lg-0 d-none d-lg-block" onSubmit={handleSearchSubmit}>
+              <form
+                className="navbar-search ms-lg-auto w-100 order-3 order-lg-0 d-none d-lg-block"
+                onSubmit={handleSearchSubmit}
+                key={`desktop:${location.pathname}:${currentSearchTerm}`}
+              >
                 <div className="input-group">
                   <input
+                    name="q"
                     type="search"
                     className="form-control"
                     placeholder="Cerca birre, stili o descrizioni"
-                    value={navbarQuery}
-                    onChange={(e) => setNavbarQuery(e.target.value)}
+                    defaultValue={currentSearchTerm}
                     aria-label="Cerca"
                   />
                   <button className="btn btn-dark d-inline-flex align-items-center gap-2" type="submit">
@@ -119,7 +104,9 @@ export default function MainLayout() {
                 >
                   <IconHeart size={20} className="nav-icon" />
                   {totalFavourites > 0 && (
-                    <span className="nav-badge bg-warning text-dark">{totalFavourites}</span>
+                    <span className="nav-badge bg-warning text-dark" aria-label={`${totalFavourites} preferiti`}>
+                      {totalFavourites}
+                    </span>
                   )}
                 </NavLink>
                 <NavLink
@@ -129,7 +116,7 @@ export default function MainLayout() {
                   title="Carrello"
                 >
                   <IconShoppingCart size={20} className="nav-icon" />
-                  {totalItems > 0 && <span className="nav-badge bg-danger">{totalItems}</span>}
+                  {totalItems > 0 && <span className="nav-badge bg-success" aria-label={`${totalItems} prodotti nel carrello`}>{totalItems}</span>}
                 </NavLink>
               </div>
             </div>
@@ -139,7 +126,7 @@ export default function MainLayout() {
 
       <FreeShippingBar />
 
-      <main className="container py-4 py-lg-5 flex-grow-1">
+      <main className="main-shell container py-4 py-lg-5 flex-grow-1">
         <Outlet />
       </main>
 
@@ -168,7 +155,6 @@ export default function MainLayout() {
               <div className="footer-links d-flex flex-column gap-2">
                 <NavLink to="/chi-siamo">Chi siamo</NavLink>
                 <NavLink to="/novita">Novità</NavLink>
-                <NavLink to="/prodotti?q=box%20degustazione">Box degustazione</NavLink>
               </div>
             </div>
 

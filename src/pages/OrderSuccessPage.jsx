@@ -30,18 +30,18 @@ export default function OrderSuccessPage() {
     return () => {
       active = false;
     };
-  }, [backendUrl, id]);
+  }, [id]);
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center py-5">
+      <div className="section-shell d-flex justify-content-center py-5">
         <div className="spinner-border" role="status" aria-label="Caricamento" />
       </div>
     );
   }
 
   if (error) {
-    return <div className="alert alert-danger">{error}</div>;
+    return <div className="section-shell alert alert-danger mb-0">{error}</div>;
   }
 
   if (!data) return null;
@@ -49,14 +49,17 @@ export default function OrderSuccessPage() {
   const { ordine, prodotti } = data;
 
   return (
-    <div className="row gy-4">
-      <div className="col-12 text-center">
+    <div className="d-flex flex-column gap-4">
+      <div className="section-shell text-center">
+        <span className="section-kicker">Ordine confermato</span>
         <h1 className="mb-2">Ordine confermato</h1>
-        <p className="text-success fw-semibold">Grazie per il tuo acquisto!</p>
+        <p className="text-success fw-semibold mb-1">Grazie per il tuo acquisto!</p>
+        <p className="mb-0 text-muted">Ti abbiamo accompagnato dal carrello al checkout: ora trovi tutti i dettagli dell&apos;ordine in un riepilogo più leggibile.</p>
       </div>
 
+      <div className="row gy-4">
       <div className="col-12 col-lg-6">
-        <div className="card h-100 shadow-sm">
+        <div className="info-card h-100 shadow-sm">
           <div className="card-body">
             <h5 className="card-title mb-3">Riepilogo ordine</h5>
             <div className="mb-2"><span className="text-muted">Codice:</span> <strong>{ordine.codice_ordine}</strong></div>
@@ -67,7 +70,7 @@ export default function OrderSuccessPage() {
       </div>
 
       <div className="col-12 col-lg-6">
-        <div className="card h-100 shadow-sm">
+        <div className="info-card h-100 shadow-sm">
           <div className="card-body">
             <h5 className="card-title mb-3">Cliente</h5>
             <div className="mb-2"><span className="text-muted">Nome:</span> <strong>{ordine.nome_cliente}</strong></div>
@@ -77,7 +80,7 @@ export default function OrderSuccessPage() {
       </div>
 
       <div className="col-12">
-        <div className="card h-100 shadow-sm">
+        <div className="info-card h-100 shadow-sm">
           <div className="card-body">
             <h5 className="card-title mb-3">Spedizione</h5>
             <div className="mb-2">{ordine.indirizzo_spedizione}</div>
@@ -87,7 +90,7 @@ export default function OrderSuccessPage() {
       </div>
 
       <div className="col-12">
-        <div className="card shadow-sm">
+        <div className="info-card shadow-sm">
           <div className="card-body">
             <h5 className="card-title mb-3">Prodotti ordinati</h5>
             <div className="list-group list-group-flush">
@@ -106,7 +109,8 @@ export default function OrderSuccessPage() {
       </div>
 
       <div className="col-12 text-center mt-2">
-        <Link className="btn btn-dark" to="/prodotti">Continua lo shopping</Link>
+        <Link className="btn btn-brand" to="/prodotti">Continua lo shopping</Link>
+      </div>
       </div>
     </div>
   );

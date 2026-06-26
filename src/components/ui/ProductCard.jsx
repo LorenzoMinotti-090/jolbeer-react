@@ -1,4 +1,4 @@
-import { IconEye, IconHeart, IconShoppingCartPlus } from "@tabler/icons-react";
+import { IconEye, IconHeart, IconMinus, IconPlus } from "@tabler/icons-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCart } from "../../context/CartContext.jsx";
@@ -29,7 +29,13 @@ export default function ProductCard({ product, variant = "grid", description }) 
   const savings = promo.hasDiscount ? Math.max(0, promo.originalPrice - promo.currentPrice) : 0;
 
   const detailDescription = description || getProductCardTeaser(product);
-  const detailPath = `/prodotti/${product.id}`;
+  const detailPath = `/prodotti/${product.slug || product.id}`;
+  const containerLabel = product.contenitore || product.formato || "Formato";
+  const stockLabel = quantity > 0 ? `${quantity} nel carrello` : currentActionLabel(product);
+
+  function currentActionLabel(item) {
+    return item.e_bundle ? "Box degustazione" : "Craft selection";
+  }
 
   const shouldSkipCardNavigation = (target) => {
     if (!(target instanceof Element)) return false;
@@ -54,16 +60,30 @@ export default function ProductCard({ product, variant = "grid", description }) 
   };
 
   const handleAdd = () => {
-    addToCart(product);
-    toast.success("Aggiunto al carrello");
+    if (quantity === 0) {
+      addToCart(product);
+      toast.success("Aggiunto al carrello");
+      return;
+    }
+
+    increaseQuantity(product.id);
+    toast.success("Quantità aumentata");
   };
 
-  const handleDecrease = () => {
+  const handleRemove = () => {
     if (quantity <= 1) {
       removeFromCart(product.id);
-    } else {
-      decreaseQuantity(product.id);
+      toast.success("Rimosso dal carrello");
+      return;
     }
+
+    decreaseQuantity(product.id);
+    toast.success("Quantità ridotta");
+  };
+
+  const handleToggleFavourite = () => {
+    toggleFavourite(product);
+    toast.success(favouriteActive ? "Rimosso dai preferiti" : "Aggiunto ai preferiti");
   };
 
   const renderActions = (size) => {
@@ -72,21 +92,24 @@ export default function ProductCard({ product, variant = "grid", description }) 
 
     return (
       <div className={`d-grid gap-2 ${spacingClass} ${responsiveGrid}`} data-no-card-nav="true">
-        {quantity === 0 ? (
+        <div className={`btn-group ${size === "sm" ? "btn-group-sm" : ""}`} role="group" aria-label="Controllo quantità prodotto">
           <button
-            className={`btn btn-brand d-inline-flex align-items-center justify-content-center gap-2 ${size === "sm" ? "btn-sm" : ""}`}
-            onClick={handleAdd}
+            className="btn btn-outline-secondary"
+            onClick={handleRemove}
+            aria-label="Togli una unità dal carrello"
+            disabled={quantity === 0}
           >
-            <IconShoppingCartPlus size={20} />
-            <span>Aggiungi al carrello</span>
+            <IconMinus size={18} />
           </button>
-        ) : (
-          <div className={`btn-group ${size === "sm" ? "btn-group-sm" : ""}`} role="group">
-            <button className="btn btn-outline-secondary" onClick={handleDecrease}>-</button>
-            <span className="btn btn-outline-secondary disabled quantity-chip">{quantity}</span>
-            <button className="btn btn-dark" onClick={() => increaseQuantity(product.id)}>+</button>
-          </div>
-        )}
+          <span className="btn btn-outline-secondary disabled quantity-chip" aria-live="polite">{quantity}</span>
+          <button
+            className="btn btn-brand"
+            onClick={handleAdd}
+            aria-label="Aggiungi una unità al carrello"
+          >
+            <IconPlus size={18} />
+          </button>
+        </div>
       </div>
     );
   };
@@ -126,6 +149,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
               <span className="badge badge-soft">{abvLabel}</span>
               <span className={`badge ${product.e_bundle ? "badge-brand" : "badge-soft"}`}>{typeLabel}</span>
             </div>
+            <div className="small text-muted mb-2">{containerLabel} · {stockLabel}</div>
             <div className="list-row">
               <p className="list-desc text-muted small mb-0">{detailDescription}</p>
               <div className="list-price-inline text-dark d-flex align-items-center justify-content-center text-center gap-2 flex-wrap promo-price-block promo-price-block--list">
@@ -153,7 +177,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
               </Link>
               <button
                 className={`btn btn-sm ${favouriteActive ? "btn-danger" : "btn-outline-secondary"}`}
-                onClick={() => toggleFavourite(product)}
+                onClick={handleToggleFavourite}
                 aria-pressed={favouriteActive}
                 aria-label="Preferito"
               >
@@ -191,7 +215,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
         </Link>
         <button
           className={`btn btn-sm ${favouriteActive ? "btn-danger" : "btn-outline-secondary"}`}
-          onClick={() => toggleFavourite(product)}
+          onClick={handleToggleFavourite}
           aria-pressed={favouriteActive}
           aria-label="Preferito"
         >
@@ -215,6 +239,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
           <div className="d-flex flex-column">
             <p className="text-uppercase text-muted small mb-1">{styleLabel}</p>
             <h5 className="card-title mb-1 product-title" title={product.nome}>{product.nome}</h5>
+            <div className="small text-muted product-subtitle">{containerLabel} · {abvLabel}</div>
           </div>
         </div>
         <div className="d-flex flex-wrap product-meta text-muted small">
@@ -222,7 +247,7 @@ export default function ProductCard({ product, variant = "grid", description }) 
           <span className="badge badge-soft">{abvLabel}</span>
           <span className={`badge ${product.e_bundle ? "badge-brand" : "badge-soft"}`}>{typeLabel}</span>
         </div>
-        <div className="text-muted small">{detailDescription}</div>
+        <div className="text-muted small product-description">{detailDescription}</div>
         <div className="mt-auto d-flex flex-column gap-2">
           <div className="promo-strip promo-strip--card">
             <div className="d-flex align-items-center justify-content-center text-center gap-2 flex-wrap promo-price-block promo-price-block--card">

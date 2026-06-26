@@ -21,7 +21,7 @@ export default function App() {
           <Route path="/cerca" element={<Navigate to="/prodotti" replace />} />
           <Route path="/prodotti" element={<ProductsPage />} />
           <Route path="/novita" element={<NovitaPage />} />
-          <Route path="/prodotti/:id" element={<ProductDetailPage />} />
+          <Route path="/prodotti/:slug" element={<ProductDetailPage />} />
           <Route path="/chi-siamo" element={<AboutPage />} />
           <Route path="/preferiti" element={<FavouritesPage />} />
           <Route path="/carrello" element={<CartPage />} />
