@@ -82,6 +82,7 @@ a:hover {
   border-radius: var(--radius-xl);
   padding: clamp(1.25rem, 3vw, 2rem);
   box-shadow: var(--shadow-soft);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -89,6 +90,7 @@ a:hover {
   background: rgba(250, 245, 238, 0.94);
   border-bottom: 1px solid rgba(228, 216, 201, 0.95);
   box-shadow: 0 8px 30px rgba(35, 28, 21, 0.06);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
 }
 
@@ -241,6 +243,7 @@ a:hover {
   padding: 0.8rem 0.9rem;
   border-radius: 1rem;
   background: rgba(255, 250, 242, 0.86);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
@@ -483,7 +486,7 @@ a:hover {
 
 @media (max-width: 767.98px) {
   .hero-section {
-    min-height: auto;
+    min-height: 0;
   }
 
   .hero-media {
